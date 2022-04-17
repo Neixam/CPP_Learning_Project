@@ -11,6 +11,22 @@ void handle_error(const std::string& prefix, const GLenum err)
     }
 }
 
+void up_framerate()
+{
+    ticks_per_sec++;
+}
+
+void down_framerate()
+{
+    if (ticks_per_sec > 1)
+        ticks_per_sec--;
+}
+
+void freezed()
+{
+    freeze = !freeze;
+}
+
 void keyboard(unsigned char key, int, int)
 {
     const auto iter = keystrokes.find(key);
@@ -73,9 +89,12 @@ void display(void)
 
 void timer(const int step)
 {
-    for (auto& item : move_queue)
+    if (!freeze)
     {
-        item->move();
+        for (auto& item : move_queue)
+        {
+            item->move();
+        }
     }
     glutPostRedisplay();
     glutTimerFunc(1000u / ticks_per_sec, timer, step + 1);

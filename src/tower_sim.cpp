@@ -30,7 +30,7 @@ TowerSimulation::~TowerSimulation()
     delete airport;
 }
 
-void TowerSimulation::create_aircraft(const AircraftType& type) const
+std::unique_ptr<Aircraft> TowerSimulation::create_aircraft(const AircraftType& type)
 {
     assert(airport); // make sure the airport is initialized before creating aircraft
 
@@ -41,22 +41,25 @@ void TowerSimulation::create_aircraft(const AircraftType& type) const
 
     Aircraft* aircraft = new Aircraft { type, flight_number, start, direction, airport->get_tower() };
     GL::display_queue.emplace_back(aircraft);
-    GL::move_queue.emplace(aircraft);
+    return std::make_unique<Aircraft>(type, flight_number, start, direction, airport->get_tower());
 }
 
-void TowerSimulation::create_random_aircraft() const
+std::unique_ptr<Aircraft> TowerSimulation::create_random_aircraft()
 {
-    create_aircraft(*(aircraft_types[rand() % 3]));
+    return create_aircraft(*(aircraft_types[rand() % 3]));
 }
 
 void TowerSimulation::create_keystrokes() const
 {
     GL::keystrokes.emplace('x', []() { GL::exit_loop(); });
     GL::keystrokes.emplace('q', []() { GL::exit_loop(); });
-    GL::keystrokes.emplace('c', [this]() { create_random_aircraft(); });
+    GL::keystrokes.emplace('c', [this]() { aircraft_manager.add(create_random_aircraft()); });
     GL::keystrokes.emplace('+', []() { GL::change_zoom(0.95f); });
     GL::keystrokes.emplace('-', []() { GL::change_zoom(1.05f); });
     GL::keystrokes.emplace('f', []() { GL::toggle_fullscreen(); });
+    GL::keystrokes.emplace('i', []() { GL::up_framerate(); });
+    GL::keystrokes.emplace('k', []() { GL::down_framerate(); });
+    GL::keystrokes.emplace('p', []() { GL::freezed(); });
 }
 
 void TowerSimulation::display_help() const
@@ -81,6 +84,11 @@ void TowerSimulation::init_airport()
     GL::move_queue.emplace(airport);
 }
 
+void TowerSimulation::init_aircraft_manager()
+{
+    GL::move_queue.emplace(aircraft_manager);
+}
+
 void TowerSimulation::launch()
 {
     if (help)
@@ -90,6 +98,7 @@ void TowerSimulation::launch()
     }
 
     init_airport();
+    init_aircraft_manager();
     init_aircraft_types();
 
     GL::loop();
